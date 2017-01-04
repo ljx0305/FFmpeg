@@ -1201,13 +1201,15 @@ check_cpp_condition(){
 EOF
 }
 
-test_cflags_cpp(){
-    log test_cflags_cpp "$@"
+test_cflags_cc(){
+    log test_cflags_cc "$@"
     flags=$1
-    condition=$2
-    shift 2
+    header=$2
+    condition=$3
+    shift 3
     set -- $($cflags_filter "$flags")
-    check_cpp "$@" <<EOF
+    check_cc "$@" <<EOF
+#include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
 #endif
@@ -2441,7 +2443,7 @@ jv_decoder_select="blockdsp"
 lagarith_decoder_select="huffyuvdsp"
 ljpeg_encoder_select="aandcttables idctdsp jpegtables"
 loco_decoder_select="golomb"
-magicyuv_decoder_select="huffyuvdsp"
+magicyuv_decoder_select="huffyuvdsp llviddsp"
 mdec_decoder_select="blockdsp idctdsp mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
 mimic_decoder_select="blockdsp bswapdsp hpeldsp idctdsp"
@@ -2531,7 +2533,7 @@ truespeech_decoder_select="bswapdsp"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
 txd_decoder_select="texturedsp"
-utvideo_decoder_select="bswapdsp"
+utvideo_decoder_select="bswapdsp huffyuvdsp"
 utvideo_encoder_select="bswapdsp huffman huffyuvencdsp"
 vble_decoder_select="huffyuvdsp"
 vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 mpegvideo vc1dsp"
@@ -4625,7 +4627,7 @@ add_cxxflags -std=c++98
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
-if test_cflags_cpp -std=c11 "__STDC_VERSION__ >= 201112L"; then
+if test_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L"; then
     add_cflags -std=c11
 else
     check_cflags -std=c99
@@ -5623,7 +5625,7 @@ check_header asm/types.h
 # it seems there are versions of clang in some distros that try to use the
 # gcc headers, which explodes for stdatomic
 # so we also check that atomics actually work here
-check_builtin stdatomic_h stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
+check_builtin stdatomic_h stdatomic.h "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0)"
 
 check_lib2 "windows.h shellapi.h" CommandLineToArgvW -lshell32
 check_lib2 "windows.h wincrypt.h" CryptGenRandom -ladvapi32
@@ -6766,7 +6768,7 @@ cat > $TMPH <<EOF
 #define FFMPEG_CONFIG_H
 #define FFMPEG_CONFIGURATION "$(c_escape $FFMPEG_CONFIGURATION)"
 #define FFMPEG_LICENSE "$(c_escape $license)"
-#define CONFIG_THIS_YEAR 2016
+#define CONFIG_THIS_YEAR 2017
 #define FFMPEG_DATADIR "$(eval c_escape $datadir)"
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"
